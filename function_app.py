@@ -119,12 +119,7 @@ def call_cati_endpoint_remove_sample(project_id, number):
 def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     
     logging.info('Python HTTP trigger function processed a request to remove number from cati.')
-    
-    # requires api key
-    api_key = req.headers.get('X-API-Key')
-    if not api_key:
-        raise ValueError("Missing API key")
-    
+
     # takes in id and database id
     
     respondent_id = req.params.get('respondent_id')
