@@ -151,6 +151,5 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
 
     # call cati api with number and project number and remove it
     cati_res = call_cati_endpoint_remove_sample(project_id, cleaned_number)
-
     
     
