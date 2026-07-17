@@ -107,7 +107,18 @@ def main():
     az_setup()
     deploy()
 
-#TODO: args
+#TODO: 
+
+import argparse
+
+
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--local", action="store_true", help="Run local setup")
+    parser.add_argument("--az", action="store_true", help="Run Azure setup")
+    parser.add_argument("--deploy", action="store_true", help="Deploy function")
+    parser.add_argument("--authenticate", action="store_true", help="Authenticate with Azure")
+
+    args = parser.parse_args()
     main()
