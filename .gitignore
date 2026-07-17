@@ -1,1 +1,6 @@
 notebooks/
+.venv
+__pycache__
+.vscode
+local.settings.json
+host.json
