@@ -77,7 +77,7 @@ def get_postgres_data(respondent_id: Optional[str] = None):
     
     if respondent_id is not None:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT uuid, phone FROM public.tracking WHERE uuid = {respondent_id}")
+            cur.execute(f"SELECT uuid, phone FROM public.tracking WHERE uuid = '{respondent_id}'")
             res = cur.fetchall() # returns a list of tuples
     else:
         with conn.cursor() as cur:
