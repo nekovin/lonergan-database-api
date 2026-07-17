@@ -23,7 +23,6 @@ user=os.getenv("DB_USER")
 pw=os.getenv("DB_PW")
 port=os.getenv("DB_PORT")
 sslmode=os.getenv("DB_SSLMODE")
-api_key=os.getenv("X_FUNCTION_API_KEY")
 
 #if alchemer_endpoint is None:
     #raise Exception("Missing alchemer endpoint")
@@ -137,6 +136,8 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     
     # fetch postgres row
     
+    logging.info("Fetching db rows")
+    
     db_rows = get_postgres_data(respondent_id)
 
     # match id, fetch number
@@ -145,6 +146,15 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     cleaned_number = convert_to_au_number(number)
 
     # call cati api with number and project number and remove it
+    logging.info("Removing from CATI")
     cati_res = call_cati_endpoint_remove_sample(project_id, cleaned_number)
+    
+    if cati_res:
+        return func.HttpResponse(f"{cati_res}")
+    else:
+        return func.HttpResponse(
+             "Error please check logs",
+             status_code=404
+        )
     
     
