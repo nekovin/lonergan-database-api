@@ -141,7 +141,8 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     db_rows = get_postgres_data(respondent_id)
 
     # match id, fetch number
-    number = db_rows[1]
+    print(db_rows)
+    fetched_uuid, number = db_rows[0]
     
     cleaned_number = convert_to_au_number(number)
 
