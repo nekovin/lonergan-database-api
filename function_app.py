@@ -8,6 +8,9 @@ import pandas as pd
 import io
 import os
 from dotenv import load_dotenv
+from typing import Optional
+import phonenumbers
+from phonenumbers import PhoneNumberFormat
 
 app = func.FunctionApp()
 
@@ -20,6 +23,10 @@ user=os.getenv("DB_USER")
 pw=os.getenv("DB_PW")
 port=os.getenv("DB_PORT")
 sslmode=os.getenv("DB_SSLMODE")
+api_key=os.getenv("X_FUNCTION_API_KEY")
+
+#if alchemer_endpoint is None:
+    #raise Exception("Missing alchemer endpoint")
 
 @app.route(route="http_endpoint", auth_level=func.AuthLevel.FUNCTION)
 def http_endpoint(req: func.HttpRequest) -> func.HttpResponse:
@@ -59,7 +66,7 @@ def get_alchemer_data() -> pd.DataFrame:
     return df[df['URL Variable: sguid'].notnull()]
 
 
-def get_postgres_data():
+def get_postgres_data(respondent_id: Optional[str] = None):
     conn = psycopg2.connect(
         host=db_host,
         dbname=dbname,
@@ -68,14 +75,45 @@ def get_postgres_data():
         port=port,
         sslmode=sslmode,
     )
-
-    with conn.cursor() as cur:
-        cur.execute("SELECT uuid, phone FROM public.tracking")
-        res = cur.fetchall() # returns a list of tuples
+    
+    if respondent_id is not None:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT uuid, phone FROM public.tracking WHERE uuid = {respondent_id}")
+            res = cur.fetchall() # returns a list of tuples
+    else:
+        with conn.cursor() as cur:
+            cur.execute("SELECT uuid, phone FROM public.tracking")
+            res = cur.fetchall() # returns a list of tuples
         
     conn.close()
     
     return res
+
+
+def convert_to_au_number(raw_number):
+    try:
+        parsed_number = phonenumbers.parse(raw_number, "AU")
+        if phonenumbers.is_valid_number(parsed_number):
+            return phonenumbers.format_number(parsed_number, PhoneNumberFormat.E164)[1:]  # Remove the leading '+' sign
+        else:
+            return None
+    except phonenumbers.NumberParseException:
+        return None
+    
+
+def call_cati_endpoint_remove_sample(project_id, number):
+    cati_endpoint = f"https://mis.lonergan.team/cati/api/project/{project_id}/remove_sample/"
+    
+    payload = {"property" : "number", "value" : number}
+
+    headers = {
+        "Accept": '*/*',
+        "Content-Type": 'application/x-www-form-urlencoded'
+        }
+
+    cati_res = requests.post(cati_endpoint, headers=headers, data=payload) #not json
+    
+    return (cati_res.status_code, cati_res.text)
 
 @app.route(route="remove_number_from_cati", auth_level=func.AuthLevel.FUNCTION)
 def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
@@ -92,6 +130,7 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     respondent_id = req.params.get('respondent_id')
     
     if not respondent_id:
+        respondent_id = None
         raise ValueError("Missing respondent_id parameter")
 
     database_id = req.params.get('database_id')
@@ -99,8 +138,19 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     if not database_id:
         raise ValueError("Missing database_id parameter")
     
+    project_id = 255
+    
     # fetch postgres row
+    
+    db_rows = get_postgres_data(respondent_id)
 
     # match id, fetch number
+    number = db_rows[1]
+    
+    cleaned_number = convert_to_au_number(number)
 
     # call cati api with number and project number and remove it
+    cati_res = call_cati_endpoint_remove_sample(project_id, cleaned_number)
+
+    
+    
