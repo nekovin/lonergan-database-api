@@ -49,7 +49,6 @@ def run_local():
     subprocess.run(["func", "start"], check=True)
 
 def see_flex():
-    # Confirm Flex Consumption supports your region + runtime before creating.
     subprocess.run(["az", "functionapp", "list-flexconsumption-locations", "-o", "table"], check=True)
     subprocess.run(
         ["az", "functionapp", "list-flexconsumption-runtimes",
@@ -88,9 +87,7 @@ def az_setup():
             check=True, capture_output=True, text=True,
         )
         storage_id = res.stdout.strip()
-
-    # Flex Consumption plan only. Flex is always Functions v4 on Linux, so
-    # --functions-version and --os-type must be omitted.
+        
     subprocess.run([
         "az", "functionapp", "create",
         "--name", config["function_app"],
@@ -109,6 +106,8 @@ def main():
     local_setup()
     az_setup()
     deploy()
+
+#TODO: args
 
 if __name__ == "__main__":
     main()
