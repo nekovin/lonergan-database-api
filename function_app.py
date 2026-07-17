@@ -122,40 +122,19 @@ def remove_number_from_cati(req: func.HttpRequest) -> func.HttpResponse:
     # takes in id and database id
     
     respondent_id = req.params.get('respondent_id')
-    
     if not respondent_id:
-        respondent_id = None
-        raise ValueError("Missing respondent_id parameter")
+        return func.HttpResponse("Missing respondent_id parameter", status_code=400)
 
-    database_id = req.params.get('database_id')
-    
-    if not database_id:
-        raise ValueError("Missing database_id parameter")
-    
     project_id = 255
-    
-    # fetch postgres row
-    
-    logging.info("Fetching db rows")
-    
-    db_rows = get_postgres_data(respondent_id)
 
-    # match id, fetch number
-    #print(db_rows)
-    fetched_uuid, number = db_rows[0]
-    
+    # fetch postgres row
+    db_rows = get_postgres_data(respondent_id)
+    number = db_rows[0][1]
+
     cleaned_number = convert_to_au_number(number)
 
-    # call cati api with number and project number and remove it
-    logging.info("Removing from CATI")
-    cati_res = call_cati_endpoint_remove_sample(project_id, cleaned_number)
-    
-    if cati_res:
-        return func.HttpResponse(f"{cati_res}")
-    else:
-        return func.HttpResponse(
-             "Error please check logs",
-             status_code=404
-        )
-    
-    
+    # call cati api to remove the number
+    status, text = call_cati_endpoint_remove_sample(project_id, cleaned_number)
+    logging.info("CATI responded %s: %s", status, text)
+
+    return func.HttpResponse(text, status_code=status)
